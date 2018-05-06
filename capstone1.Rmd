@@ -1,0 +1,34 @@
+---
+title: "capstone1"
+author: "Saurav"
+date: "6 May 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+knitr::opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = "center", dpi = 100, tidy = F, cache.path = '.cache/', fig.path = 'fig/', cache = TRUE)
+```
+
+## R Markdown
+
+```{r}
+source("./longestline.R")
+source("./findAllandPrint.R")
+twfile <- "./data/Coursera-SwiftKey/final/en_US/en_US.twitter.txt"
+newsfile <- "./data/Coursera-SwiftKey/final/en_US/en_US.news.txt"
+blogsfile <- "./data/Coursera-SwiftKey/final/en_US/en_US.blogs.txt"
+
+findAllandPrint(twfile, "who is this")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
