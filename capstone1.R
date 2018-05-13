@@ -12,7 +12,7 @@ longestline <- function(filename){
         s
         
 }
-
+plot(pressure)
 longestline("./data/Coursera-SwiftKey/final/en_US/en_US.news.txt")
 
 twfilename <- "./data/Coursera-SwiftKey/final/en_US/en_US.twitter.txt"

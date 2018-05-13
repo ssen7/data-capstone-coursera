@@ -1,8 +1,12 @@
 ---
-title: "capstone1"
+title: "Exploratory Data Analysis for Capstone Project"
 author: "Saurav"
 date: "6 May 2018"
-output: html_document
+output:
+  html_document:
+        keep_md: True
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -11,24 +15,126 @@ options(width = 100)
 knitr::opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = "center", dpi = 100, tidy = F, cache.path = '.cache/', fig.path = 'fig/', cache = TRUE)
 ```
 
-## R Markdown
+## Summarize the data
 
-```{r}
-source("./longestline.R")
-source("./findAllandPrint.R")
-twfile <- "./data/Coursera-SwiftKey/final/en_US/en_US.twitter.txt"
-newsfile <- "./data/Coursera-SwiftKey/final/en_US/en_US.news.txt"
-blogsfile <- "./data/Coursera-SwiftKey/final/en_US/en_US.blogs.txt"
+### Find the length of each file
+#### We need to see how much data is in each file to find out the largest source, and figure out potential biases that can occur due to this.
+```{r echo=FALSE}
+## clean workspace
+rm(list = ls())
+library(ggplot2)
+library(stringr)
+base_directory <- "./data/Coursera-SwiftKey/final"
 
-findAllandPrint(twfile, "who is this")
+dirs <- list.dirs(base_directory, full.names = TRUE)
+
+nol <- numeric()
+fn <- character()
+for (j in 2:length(dirs)){        
+        files <- list.files(dirs[j], pattern = "*.txt",full.names=TRUE)
+        for (i in 1:length(files)) {
+                n <- length(readLines(files[i]))
+                nol <- c(nol, n)
+        }
+        fn <- c(fn, files) 
+}
+fnew <- gsub(base_directory, "", fn)
+nol_summary <- data.frame(FileName = fnew, NOL = nol, Filepath = fn)
+
+nol_summary
+
+g <- ggplot(data = nol_summary, mapping = aes(x = FileName, y = NOL)) + geom_bar(stat = "identity")
+g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+g <- g + xlab("File Name") + ylab("Number of Lines") + ggtitle("Size of files")
+g
 ```
 
-## Including Plots
+#### From this we can figure out that **Twitter** data for English is the most prominent source of data for us.
 
-You can also embed plots, for example:
+#### We can then look at the longest single line in each of the files.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r echo=FALSE}
+files <- as.character(nol_summary$Filepath)
+filelen <- nol_summary$NOL
+linelen <- numeric()
+longline <- character()
+for (j in 1:nrow(nol_summary)){
+        conn <- file(files[j], "r")
+        s <- nchar(readLines(conn, 1))
+        len <- readLines(conn, encoding = "UTF-8")
+        for (i in 1:length(len)){
+                t <- nchar(len[i])
+                if (t > s){
+                        s <- t
+                        pos<- len[i]
+                }
+        }
+        close(conn)
+        linelen <- c(linelen, s)
+        longline <- c(longline, pos)
+        
+}
+#linelen
+#longline
+## remove the len variable
+rm(list = c("len"))
+nol_summary$LongestLineLength <- linelen
+nol_summary$LongestLine <- longline
+
+nol_summary[, c(1,2,4)]
+
+g2 <- ggplot(data = nol_summary, mapping = aes(x = FileName, y = LongestLineLength)) + geom_bar(stat = "identity")
+g2 <- g2 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+g2 <- g2 + xlab("File Name") + ylab("Length of Longest Line") + ggtitle("Longest Line Length in each file")
+g2
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#### Now we have a record of the longest lines in each of the files
+
+#### According to [Dictionary.com](http://www.dictionary.com/e/commonwords/) (using the Google Ngram viewer tool), the most common nouns in the English language are:
+1. time
+2. person
+3. year
+4. way
+5. day
+6. thing
+7. man
+8. world
+9. life
+10. hand
+
+#### We will try to find the occurances of these words in the english sources in the dataset. Just to see if they hold up.
+```{r echo=FALSE}
+en_file_list <- c(files[4],files[5],files[6])
+en_word_list <- c("time","person", "year", "way","day", "thing", "man","world", "life","hand")
+count_list <- list()
+
+for (i in 1:length(en_file_list)){
+        s <- numeric()
+        for (word in en_word_list){
+                t <- sum(grepl(word, readLines(en_file_list[i])))
+                s <- c(s,t)
+        }
+        count_list[[i]] <- s
+}
+
+word_summary <- data.frame(en_US.blogs = count_list[[1]],en_US.news = count_list[[2]], en_US.twitter = count_list[[3]])
+row.names(word_summary) <- en_word_list
+word_summary
+```
+
+#### Plotting the occurance of each word:
+
+```{r echo=FALSE}
+
+g3 <- ggplot(data = word_summary, aes(x = row.names(word_summary), y = en_US.blogs))
+g3 <- g3 + geom_bar(stat = "identity") + xlab("Words") + ylab("Frequency") + ggtitle("Top 10 Noun Frequency in en_US.blogs.txt")
+g3
+
+```
+
+### Plan for modelling
+#### As indicated in the assigned readings we will try to build n-grams from each of the three data sources. This will involve reading each line and breaking it into its constituent phrases, whatever the **n** value might be.
+#### Since we need to predict the next word based on the previous word, I think our model will work efficiently and accurately is **n = 3**.
+#### Our next task will be to break each line of each text file into a sequence of 3 words and perform modelling on it.
